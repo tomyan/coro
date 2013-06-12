@@ -43,31 +43,31 @@ module.exports = new litmus.Test(module, function () {
 
     this.async('run command', function (done) {
 
-        run(function * (coro) {
+        run(function * (next) {
 
-            test.is((yield exec('printf hello', coro.resume))[0], 'hello', 'run command once');
-            test.is((yield exec('printf hello', coro.resume))[0], 'hello', 'run command again');
+            test.is((yield exec('printf hello', next.resume))[0], 'hello', 'run command once');
+            test.is((yield exec('printf hello', next.resume))[0], 'hello', 'run command again');
 
             try {
-                yield exec('false', coro.resume);
+                yield exec('false', next.resume);
             }
             catch (e) {
                 test.like(e, /Command failed/, 'default resume throws');
             }
 
-            test.is(yield exec('printf hello', coro.resumeFirst), 'hello', 'resumeOne returns first non error argument');
+            test.is(yield exec('printf hello', next.resumeFirst), 'hello', 'resumeOne returns first non error argument');
 
             try {
-                yield exec('false', coro.resumeFirst);
+                yield exec('false', next.resumeFirst);
                 test.fail('exception expected');
             }
             catch (e) {
                 test.like(e, /Command failed/, 'resumeOne error as exception');
             }
 
-            test.is(yield exec('printf hello', coro.resumeNoThrow), [null, 'hello', ''], 'resumeNoThrow returns array of results');
+            test.is(yield exec('printf hello', next.resumeNoThrow), [null, 'hello', ''], 'resumeNoThrow returns array of results');
 
-            test.like((yield exec('false', coro.resumeNoThrow))[0], /Command failed/, 'error passed as arg');
+            test.like((yield exec('false', next.resumeNoThrow))[0], /Command failed/, 'error passed as arg');
 
             var successfulPromise = new Promise(),
                 resolvedValue = {};

@@ -2,9 +2,9 @@
 var exec = require('child_process').exec,
     run  = require('../lib/coro').run;
 
-run(function * (coro) {
+run(function * (next) {
 
-    console.log(yield exec('printf hello', coro.resumeFirst));
+    console.log(yield exec('printf hello', next.resumeFirst));
 
 });
 
