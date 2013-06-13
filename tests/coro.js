@@ -37,7 +37,7 @@ var Promise = function () {
 };
 
 module.exports = new litmus.Test(module, function () {
-    this.plan(9);
+    this.plan(12);
 
     var test = this;
 
@@ -69,6 +69,18 @@ module.exports = new litmus.Test(module, function () {
 
             test.like((yield exec('false', next.resumeNoThrow))[0], /Command failed/, 'error passed as arg');
 
+            test.like(yield exec('fail', next.resumeNoThrowFirst), /Command failed/, 'resumeNoThrowFirst returns first argument');
+
+            test.is(yield exec('printf hello', next.resumeNoThrowNth(1)), 'hello', 'resumeNoThrowNth(1) returns second argument');
+
+            try {
+                yield exec('fail', next.resumeThrow);
+                test.fail('exception expected');
+            }
+            catch (e) {
+                test.like(e.message, /Command failed/, 'resumeThrow throws first argument');
+            }
+
             var successfulPromise = new Promise(),
                 resolvedValue = {};
 
@@ -82,7 +94,6 @@ module.exports = new litmus.Test(module, function () {
                 error = new Error('an error');
 
             process.nextTick(function () {
-                console.log('rejecting');
                 unsuccessfulPromise.reject(error);
             });
 
