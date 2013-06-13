@@ -37,7 +37,7 @@ var Promise = function () {
 };
 
 module.exports = new litmus.Test(module, function () {
-    this.plan(12);
+    this.plan(14);
 
     var test = this;
 
@@ -105,6 +105,15 @@ module.exports = new litmus.Test(module, function () {
                 test.ok(e === error, 'rejected promise throws rejected value');
             }
 
+            test.is(yield run(function * (next) {
+                return 'hello';
+            }, next.resumeFirst), 'hello', 'return value passed as second argument to callback');
+
+            var e;
+            test.ok(yield run(function * (next) {
+                throw e = new Error('hello');
+            }, next.resumeNoThrowFirst) === e, 'exception passed as first argument to callback');
+            
             done.resolve();
 
         });

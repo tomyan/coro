@@ -1,7 +1,4 @@
-Description
-===========
-
-Library for managing Coroutines using Harmony generators, working well with both Node core style callbacks and promises.
+Library for managing Coroutines using Harmony generators. Supports both Node core style callbacks and promises.
 
 Installation
 ============
@@ -95,7 +92,7 @@ The careful observer will notice that there's a problem with the above methods. 
         
         // destructuring assignment will be great for this
         var result = yield exec('echo -n hello', next.resumeNoThrow),
-            err    = result[0], stdout = result[1], stderr = result[2];
+            err = result[0], stdout = result[1], stderr = result[2];
         
         // still throws on error
         
@@ -109,7 +106,7 @@ These allow you to pick out individual parameters to the callback, rather than h
 
 ### next.resumeThrow
 
-Some styles of callback APIs have a separate callback just for signalling errors (so called "errbacks"). For these, use next.resumeThrow. In this example, we're using the read method from the q-io/fs NPM module to read in a file:
+Some styles of callback API have a separate callback just for signalling errors (so called "errbacks"). For these use next.resumeThrow. In this example we're using the read method from the q-io/fs NPM module to read in a file:
 
     var run  = require('coro').run,
         read = require('q-io/fs').read;
@@ -117,7 +114,10 @@ Some styles of callback APIs have a separate callback just for signalling errors
     run(function * (next) {
         
         try {
-            var fileContents = yield read('/some/file', 'r').then(next.resumeNoThrowFirst, next.resumeThrow);
+            var fileContents = yield read('/some/file', 'r').then(
+                next.resumeNoThrowFirst,
+                next.resumeThrow
+            );
         }
         catch (e) {
             // e is the parameter to the errback if there is an error
@@ -141,6 +141,49 @@ While it is possible to make use of promises as in the example above, it's not n
             // e is the value the promise was rejected wtih 
         }
         
+    });
+
+### Tracking completion/errors from your coroutine
+
+There are two ways to track when your coroutine completes (i.e. returns) or throws an error - providing a callback and using a returned promise. These mechanisms make it trivial to compose coroutines by having one wait for the completion of another.
+
+#### Passing a callback
+
+You can pass a callback function as a second parameter to the run function. This follows the convention of taking an error as the first parameter (or null if successful), followed by the return value (or null if an exception is raised):
+
+    var run  = require('coro').run,
+        exec = require('child_process').exec;
+    
+    run(function * (next) {
+        
+        return yield exec('echo -n hello', next.resumeFirst);
+        
+    }, function (err, output) {
+        if (err) {
+            // deal with error
+        }
+        else {
+            // deal with output
+        }
+    });
+
+#### Returned promise
+
+WARNING: This feature is not currently implemented - coming soon.
+
+If a callback is not passed, a Promises A+ compatible promise is returned from the run function. This is either resolved with the return value or rejected with an exception:
+
+    var run  = require('coro').run,
+        exec = require('child_process').exec;
+    
+    run(function * (next) {
+        
+        return yield exec('echo -n hello', next.resumeFirst);
+        
+    }).then(function (output) {
+        // deal with output
+    }, function (err) {
+        // deal with errors
     });
 
 License
