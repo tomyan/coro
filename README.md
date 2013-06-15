@@ -169,8 +169,6 @@ You can pass a callback function as a second parameter to the run function. This
 
 #### Returned promise
 
-WARNING: This feature is not currently implemented - coming soon.
-
 If a callback is not passed, a Promises A+ compatible promise is returned from the run function. This is either resolved with the return value or rejected with an exception:
 
     var run  = require('coro').run,
@@ -185,6 +183,8 @@ If a callback is not passed, a Promises A+ compatible promise is returned from t
     }, function (err) {
         // deal with errors
     });
+
+
 
 License
 =======

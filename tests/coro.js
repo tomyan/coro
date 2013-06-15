@@ -1,43 +1,11 @@
 
 var litmus = require('litmus'),
     exec   = require('child_process').exec,
-    run    = require('../lib/coro').run;
-
-var Promise = function () {
-    this._callbacks = [];
-    this._errbacks = [];
-    this.then = function (callback, errback) {
-        if (this._resolved) {
-            callback(this._value);
-        }
-        else if (this._errored) {
-            errback(this._value);
-        }
-        else {
-            this._callbacks.push(callback);
-            if (errback) {
-                this._errbacks.push(errback);
-            }
-        }
-    };
-    this.resolve = function (value) {
-        this._resolved = true;
-        this._value = value;
-        while (this._callbacks.length) {
-            this._callbacks.shift()(value);
-        }
-    };
-    this.reject = function (value) {
-        this._errored = true;
-        this._value = value;
-        while (this._errbacks.length) {
-            this._errbacks.shift()(value);
-        }
-    };
-};
+    run    = require('../lib/coro').run,
+    p      = require('p-promise');
 
 module.exports = new litmus.Test(module, function () {
-    this.plan(14);
+    this.plan(16);
 
     var test = this;
 
@@ -81,24 +49,24 @@ module.exports = new litmus.Test(module, function () {
                 test.like(e.message, /Command failed/, 'resumeThrow throws first argument');
             }
 
-            var successfulPromise = new Promise(),
+            var successfulDeferred = p.defer(),
                 resolvedValue = {};
 
             process.nextTick(function () {
-                successfulPromise.resolve(resolvedValue);
+                successfulDeferred.resolve(resolvedValue);
             });
 
-            test.ok((yield successfulPromise) === resolvedValue, 'resolved value is yielded');
+            test.ok((yield successfulDeferred.promise) === resolvedValue, 'resolved value is yielded');
 
-            var unsuccessfulPromise = new Promise(),
+            var unsuccessfulDeferred = p.defer(),
                 error = new Error('an error');
 
             process.nextTick(function () {
-                unsuccessfulPromise.reject(error);
+                unsuccessfulDeferred.reject(error);
             });
 
             try {
-                yield unsuccessfulPromise;
+                yield unsuccessfulDeferred.promise;
                 test.fail('exception expected');
             }
             catch (e) {
@@ -109,12 +77,39 @@ module.exports = new litmus.Test(module, function () {
                 return 'hello';
             }, next.resumeFirst), 'hello', 'return value passed as second argument to callback');
 
-            var e;
+             
+           var e;
             test.ok(yield run(function * (next) {
                 throw e = new Error('hello');
             }, next.resumeNoThrowFirst) === e, 'exception passed as first argument to callback');
-            
+
             done.resolve();
+
+        });
+
+        this.async('returned promise success', function (done) {
+
+            var returnValue = {};
+
+            run(function * () {
+                return returnValue;
+            }).then(function (val) {
+                test.ok(val === returnValue, 'promise resolved with returned value');
+                done.resolve();
+            });
+
+        });
+
+        this.async('returned promise success', function (done) {
+
+            var thrownValue = new Error();
+
+            run(function * () {
+                throw thrownValue;
+            }).then(null, function (val) {
+                test.ok(val === thrownValue, 'promise rejected with thrown value');
+                done.resolve();
+            });
 
         });
 
