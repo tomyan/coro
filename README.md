@@ -9,6 +9,11 @@ Coro can be installed from NPM with the following:
 
 To make use of the module you (currently) need to run at least 0.11.2 of Node with the --harmony flag.
 
+Status
+======
+
+Coro is API complete and should be stable for use in Node (YMMV in a browser). I'm planning to make it 1.0.0 when you no longer need to pass a flag to node to make it work.
+
 Usage
 =====
 
@@ -24,6 +29,24 @@ Run a coroutine as follows:
 
 Within the passed generator function, asynchronous APIs can be accessed synchronously. Two common patterns of asynchronous APIs are currently supported: ones that take a callback and ones that return a promise.
 
+Promise base APIs
+-----------------
+
+Coro makes it really easy to use a promise based API and access the resolved value synchronously. Just yield the promise returning function and you'll have the value (or an exception if the promise was rejected):
+
+    var run  = require('coro').run,
+        read = require('q-io/fs').read;
+    
+    run(function * (next) {
+        
+        try {
+            var fileContents = yield read('/some/file', 'r');
+        }
+        catch (e) {
+            // e is the value the promise was rejected wtih 
+        }
+        
+    });
 
 Callback based APIs
 -------------------
@@ -125,29 +148,14 @@ Some styles of callback API have a separate callback just for signalling errors 
         
     });
 
-### Integration with promises
+Using this method for handling promises isn't recommended - use the built in promise support described above.
 
-While it is possible to make use of promises as in the example above, it's not neccessary as support for promises is built in. The above example can be rewritten as:
-
-    var run  = require('coro').run,
-        read = require('q-io/fs').read;
-    
-    run(function * (next) {
-        
-        try {
-            var fileContents = yield read('/some/file', 'r');
-        }
-        catch (e) {
-            // e is the value the promise was rejected wtih 
-        }
-        
-    });
-
-### Tracking completion/errors from your coroutine
+Tracking completion/errors from your coroutine
+----------------------------------------------
 
 There are two ways to track when your coroutine completes (i.e. returns) or throws an error - providing a callback and using a returned promise. These mechanisms make it trivial to compose coroutines by having one wait for the completion of another.
 
-#### Passing a callback
+### Passing a callback
 
 You can pass a callback function as a second parameter to the run function. This follows the convention of taking an error as the first parameter (or null if successful), followed by the return value (or null if an exception is raised):
 
@@ -167,7 +175,7 @@ You can pass a callback function as a second parameter to the run function. This
         }
     });
 
-#### Returned promise
+### Returned promise
 
 If a callback is not passed, a Promises A+ compatible promise is returned from the run function. This is either resolved with the return value or rejected with an exception:
 
