@@ -1,7 +1,8 @@
 {
   "name" : "coro",
-  "version" : "0.4.2",
+  "version" : "0.4.3",
   "main" : "lib/coro",
+  "author": "Tom Yandell <tom@yandell.me.uk> (https://github.com/tomyan)",
   "license": "MIT",
   "repository" : {
     "type" : "git",
@@ -10,5 +11,5 @@
   "dependencies" : {
     "p-promise" : ">= 0.2.4"
   },
-  "keywords" : [ "coroutine", "generator", "harmony", "async" ]
+  "keywords" : [ "coroutine", "coroutines", "generator", "generators", "harmony", "async" ]
 }
