@@ -1,6 +1,6 @@
 {
   "name" : "coro",
-  "version" : "0.4.0",
+  "version" : "0.4.1",
   "main" : "lib/coro",
   "repository" : {
     "type" : "git",
@@ -8,5 +8,6 @@
   },
   "dependencies" : {
     "p-promise" : ">= 0.2.4"
-  }
+  },
+  "keywords" : [ "coroutine", "generator", "harmony", "async" ]
 }
