@@ -1,7 +1,7 @@
 
 var litmus = require('litmus'),
     exec   = require('child_process').exec,
-    run    = require('../lib/coro').run,
+    coro   = require('../lib/coro'),
     p      = require('p-promise');
 
 module.exports = new litmus.Test(module, function () {
@@ -11,38 +11,39 @@ module.exports = new litmus.Test(module, function () {
 
     this.async('run command', function (done) {
 
-        run(function * (next) {
+        coro.run(function * () {
 
-            test.is((yield exec('printf hello', next.resume))[0], 'hello', 'run command once');
-            test.is((yield exec('printf hello', next.resume))[0], 'hello', 'run command again');
+            test.is((yield exec('printf hello', coro.resume()))[0], 'hello', 'run command once');
+
+            test.is((yield exec('printf hello', coro.resume()))[0], 'hello', 'run command again');
 
             try {
-                yield exec('false', next.resume);
+                yield exec('false', coro.resume());
             }
             catch (e) {
                 test.like(e, /Command failed/, 'default resume throws');
             }
 
-            test.is(yield exec('printf hello', next.resumeFirst), 'hello', 'resumeOne returns first non error argument');
+            test.is(yield exec('printf hello', coro.resumeFirst()), 'hello', 'resumeFirst returns first non error argument');
 
             try {
-                yield exec('false', next.resumeFirst);
+                yield exec('false', coro.resumeFirst());
                 test.fail('exception expected');
             }
             catch (e) {
                 test.like(e, /Command failed/, 'resumeOne error as exception');
             }
 
-            test.is(yield exec('printf hello', next.resumeNoThrow), [null, 'hello', ''], 'resumeNoThrow returns array of results');
+            test.is(yield exec('printf hello', coro.resumeNoThrow()), [null, 'hello', ''], 'resumeNoThrow returns array of results');
 
-            test.like((yield exec('false', next.resumeNoThrow))[0], /Command failed/, 'error passed as arg');
+            test.like((yield exec('false', coro.resumeNoThrow()))[0], /Command failed/, 'error passed as arg');
 
-            test.like(yield exec('fail', next.resumeNoThrowFirst), /Command failed/, 'resumeNoThrowFirst returns first argument');
+            test.like(yield exec('fail', coro.resumeNoThrowFirst()), /Command failed/, 'resumeNoThrowFirst returns first argument');
 
-            test.is(yield exec('printf hello', next.resumeNoThrowNth(1)), 'hello', 'resumeNoThrowNth(1) returns second argument');
+            test.is(yield exec('printf hello', coro.resumeNoThrowNth(1)), 'hello', 'resumeNoThrowNth(1) returns second argument');
 
             try {
-                yield exec('fail', next.resumeThrow);
+                yield exec('fail', coro.resumeThrow());
                 test.fail('exception expected');
             }
             catch (e) {
@@ -73,15 +74,15 @@ module.exports = new litmus.Test(module, function () {
                 test.ok(e === error, 'rejected promise throws rejected value');
             }
 
-            test.is(yield run(function * (next) {
+            test.is(yield coro.run(function * () {
                 return 'hello';
-            }, next.resumeFirst), 'hello', 'return value passed as second argument to callback');
+            }, null, coro.resumeFirst()), 'hello', 'return value passed as second argument to callback');
 
              
-           var e;
-            test.ok(yield run(function * (next) {
+            var e;
+            test.ok(yield coro.run(function * () {
                 throw e = new Error('hello');
-            }, next.resumeNoThrowFirst) === e, 'exception passed as first argument to callback');
+            }, null, coro.resumeNoThrowFirst()) === e, 'exception passed as first argument to callback');
 
             done.resolve();
 
@@ -91,7 +92,7 @@ module.exports = new litmus.Test(module, function () {
 
             var returnValue = {};
 
-            run(function * () {
+            coro.run(function * () {
                 return returnValue;
             }).then(function (val) {
                 test.ok(val === returnValue, 'promise resolved with returned value');
@@ -104,7 +105,7 @@ module.exports = new litmus.Test(module, function () {
 
             var thrownValue = new Error();
 
-            run(function * () {
+            coro.run(function * () {
                 throw thrownValue;
             }).then(null, function (val) {
                 test.ok(val === thrownValue, 'promise rejected with thrown value');
