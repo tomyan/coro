@@ -1,6 +1,6 @@
 {
   "name" : "coro",
-  "version" : "0.4.3",
+  "version" : "0.5.0",
   "main" : "lib/coro",
   "author": "Tom Yandell <tom@yandell.me.uk> (https://github.com/tomyan)",
   "license": "MIT",
