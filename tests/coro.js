@@ -5,7 +5,7 @@ var litmus = require('litmus'),
     p      = require('p-promise');
 
 module.exports = new litmus.Test(module, function () {
-    this.plan(18);
+    this.plan(19);
 
     var test = this;
 
@@ -80,9 +80,9 @@ module.exports = new litmus.Test(module, function () {
 
              
             var e;
-            test.ok(yield coro.run(function * () {
+            test.ok((yield coro.run(function * () {
                 throw e = new Error('hello');
-            }, null, coro.resumeNoThrowFirst()) === e, 'exception passed as first argument to callback');
+            }, null, coro.resumeNoThrowFirst())) === e, 'exception passed as first argument to callback');
 
             done.resolve();
 
@@ -101,7 +101,7 @@ module.exports = new litmus.Test(module, function () {
 
         });
 
-        this.async('returned promise success', function (done) {
+        this.async('returned promise failure', function (done) {
 
             var thrownValue = new Error();
 
@@ -123,6 +123,17 @@ module.exports = new litmus.Test(module, function () {
                 test.ok(arg1 === passedArg1 && arg2 === passedArg2, 'args are those passed to run');
                 done.resolve();
             }, [ arg1, arg2 ]);
+        });
+
+        test.async('boundRun method', function (done) {
+            var invocant = { run : coro.boundRun };
+
+            coro.run.call(invocant, function * () {
+                test.ok((yield this.run(function * () {
+                    return this;
+                })) === invocant, 'invocant maintained by boundRun method');
+                done.resolve();
+            });
         });
 
     });

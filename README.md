@@ -202,6 +202,26 @@ If a callback is not passed, a Promises A+ compatible promise is returned from t
     });
 
 
+coro.boundRun() method
+======================
+
+If you'd like to maintain the value of `this` inside a coroutine without having to call `call` or `apply` on the run method, then you can add a run method to your own object using the coro.boundRun method:
+
+    var coro = require('coro');
+    
+    var MyThing = function () {};
+    
+    MyThing.prototype.run = coro.boundRun;
+    
+    MyThing.prototype.doSomething = function () {
+        
+        this.run(function * () {
+            // this is the instance of my thing
+        });
+        
+    };
+
+This is convenient as it allow coroutines to arbtrarily nested while maintaining the value of `this`.
 
 License
 =======
