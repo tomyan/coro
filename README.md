@@ -12,20 +12,28 @@ To make use of the module you (currently) need to run at least 0.11.2 of Node wi
 Status
 ======
 
-Coro is API complete and should be stable for use in Node (YMMV in a browser). I'm planning to make it 1.0.0 when you no longer need to pass a flag to node to make it work.
+The Coro API is considered stable for use in Node (YMMV in a browser). I'm planning to make it 1.0.0 when you no longer need to pass a flag to node to make it work.
 
 Usage
 =====
 
 Run a coroutine as follows:
 
-    var run = require('coro').run;
+    var coro = require('coro');
     
-    run(function * (next) {
+    coro.run(function * () {
         
         // Coroutine goodness here
         
     });
+
+coro.run(generator, args, callback) takes the following arguments:
+
+* A generator function containing the code to be run as the coroutine.
+* An optional array of arguments that should be passed to the generator function.
+* An optional callback function that should be called when the generator has completed. This follows the node convention of passing an error as the first parameter, which is present if an uncaught exception was thrown in the generator function. The second parameter to the callback is the return value from the generator function.
+
+If no callback is passed, then a Promises A+ compatible promise is returned from coro.run().
 
 Within the passed generator function, asynchronous APIs can be accessed synchronously. Two common patterns of asynchronous APIs are currently supported: ones that take a callback and ones that return a promise.
 
@@ -34,10 +42,10 @@ Promise base APIs
 
 Coro makes it really easy to use a promise based API and access the resolved value synchronously. Just yield the promise returning function and you'll have the value (or an exception if the promise was rejected):
 
-    var run  = require('coro').run,
+    var coro = require('coro'),
         read = require('q-io/fs').read;
     
-    run(function * (next) {
+    coro.run(function * () {
         
         try {
             var fileContents = yield read('/some/file', 'r');
@@ -53,18 +61,17 @@ Callback based APIs
 
 The convention for asynchronous APIs in Node.js itself is for functions to take a callback argument. This callback is then invoked with an error as the first parameter. The following examples use the "exec" method from the child_process module, which runs a command. The callback passed to exec is invoked with an error (or null), the output of the command to STDOUT, and the output of the command to STDERR.
 
-### next.resume
+### coro.resume()
 
-Calling yield with the next.resume function results in an array of the non-error arguments (i.e. output to STDOUT and STDERR for exec) on success, or an exception if there was an error:
+coro.resume() returns a function that will resume the current coroutine where it has been yielded. This function should be passed as the callback parameter to a to a callback based API. If the error parameter is set, then this is raised as an exception. Otherwise, the remaining parameters to the callback are returned from the call to yield in an array.
 
-    
-    var run  = require('coro').run,
+    var coro = require('coro'),
         exec = require('child_process').exec;
     
-    run(function * (next) {
+    coro.run(function * () {
         
         try {
-            var output = yield exec('echo -n hello', next.resume);
+            var output = yield exec('echo -n hello', coro.resume());
             console.log('STDOUT: ' + output[0] + ', STDERR: ' + output[1]);
         }
         catch (e) {
@@ -73,48 +80,48 @@ Calling yield with the next.resume function results in an array of the non-error
 
     });
 
-### next.resumeFirst
+### coro.resumeFirst()
 
-If you're only interested in the first parameter (e.g. the output to STDOUT for exec), use next.resumeFirst:
+If you're only interested in the first parameter (e.g. the output to STDOUT for exec), use coro.resumeFirst():
 
-    var run  = require('coro').run,
+    var coro = require('coro'),
         exec = require('child_process').exec;
     
-    run(function * (next) {
+    coro.run(function * () {
         
-        console.log('hello == ' + yield exec('echo -n hello', next.resumeFirst));
+        console.log('hello == ' + yield exec('echo -n hello', coro.resumeFirst()));
         
         // still throws on error
         
     });
 
-### next.resumeNth
+### coro.resumeNth(n)
 
-The more general case of the above is next.resumeNth. This allows you to pick out any single parameter rather than just the first. For example, to capture the output to STDERR only for exec:
+The more general case of the above is coro.resumeNth(n). This allows you to pick out any single parameter rather than just the first. For example, to capture the output to STDERR only for exec:
 
-    var run  = require('coro').run,
+    var coro = require('coro'),
         exec = require('child_process').exec;
     
-    run(function * (next) {
+    coro.run(function * () {
         
         // in this case an empty string will be yielded
-        console.log('STDERR: ' + yield exec('echo -n hello', next.resumeNth(1)));
+        console.log('STDERR: ' + yield exec('echo -n hello', coro.resumeNth(1)));
         
         // still throws on error
         
     });
 
-### next.resumeNoThrow
+### coro.resumeNoThrow()
 
-The careful observer will notice that there's a problem with the above methods. Where there is an error (e.g. the command exits with a non-zero exit status) and an exception is thrown, there's no way to access the other parameters to the callback (e.g. the output to STDERR). Where you need this, you can use the next.resumeNoThrow function:
+The careful observer will notice that there's a problem with the above methods. Where there is an error (e.g. the command exits with a non-zero exit status) and an exception is thrown, there's no way to access the other parameters to the callback (e.g. the output to STDERR). Where you need this, you can use the coro.resumeNoThrow() function:
 
-    var run  = require('coro').run,
+    var coro = require('coro'),
         exec = require('child_process').exec;
     
-    run(function * (next) {
+    coro.run(function * () {
         
         // destructuring assignment will be great for this
-        var result = yield exec('echo -n hello', next.resumeNoThrow),
+        var result = yield exec('echo -n hello', coro.resumeNoThrow()),
             err = result[0], stdout = result[1], stderr = result[2];
         
         // still throws on error
@@ -123,23 +130,23 @@ The careful observer will notice that there's a problem with the above methods. 
 
 This is also useful for callback APIs that don't follow Node's conventions for indicating an error in the first parameter.
 
-### next.resumeNoThrowFirst, next.resumeNoThrowNth
+### coro.resumeNoThrowFirst(), coro.resumeNoThrowNth(n)
 
 These allow you to pick out individual parameters to the callback, rather than have yield return an array of parameters.
 
-### next.resumeThrow
+### coro.resumeThrow()
 
-Some styles of callback API have a separate callback just for signalling errors (so called "errbacks"). For these use next.resumeThrow. In this example we're using the read method from the q-io/fs NPM module to read in a file:
+Some styles of callback API have a separate callback just for signalling errors (so called "errbacks"). For these use coro.resumeThrow(). In this example we're using the read method from the q-io/fs NPM module to read in a file:
 
-    var run  = require('coro').run,
+    var coro = require('coro'),
         read = require('q-io/fs').read;
     
-    run(function * (next) {
+    coro.run(function * () {
         
         try {
             var fileContents = yield read('/some/file', 'r').then(
-                next.resumeNoThrowFirst,
-                next.resumeThrow
+                coro.resumeNoThrowFirst(),
+                coro.resumeThrow()
             );
         }
         catch (e) {
@@ -157,14 +164,14 @@ There are two ways to track when your coroutine completes (i.e. returns) or thro
 
 ### Passing a callback
 
-You can pass a callback function as a second parameter to the run function. This follows the convention of taking an error as the first parameter (or null if successful), followed by the return value (or null if an exception is raised):
+You can pass a callback function as a third parameter to the run function. This follows the convention of taking an error as the first parameter (or null if successful), followed by the return value (or null if an exception is raised):
 
-    var run  = require('coro').run,
+    var coro = require('coro'),
         exec = require('child_process').exec;
     
-    run(function * (next) {
+    coro.run(function * () {
         
-        return yield exec('echo -n hello', next.resumeFirst);
+        return yield exec('echo -n hello', coro.resumeFirst());
         
     }, function (err, output) {
         if (err) {
@@ -179,12 +186,12 @@ You can pass a callback function as a second parameter to the run function. This
 
 If a callback is not passed, a Promises A+ compatible promise is returned from the run function. This is either resolved with the return value or rejected with an exception:
 
-    var run  = require('coro').run,
+    var coro = require('coro'),
         exec = require('child_process').exec;
     
-    run(function * (next) {
+    coro.run(function * () {
         
-        return yield exec('echo -n hello', next.resumeFirst);
+        return yield exec('echo -n hello', coro.resumeFirst());
         
     }).then(function (output) {
         // deal with output
