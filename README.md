@@ -14,6 +14,8 @@ Status
 
 The Coro API is considered stable for use in Node (YMMV in a browser). I'm planning to make it 1.0.0 when you no longer need to pass a flag to node to make it work.
 
+Please note that the API did change between 0.4.3 and 0.5.0 (against expectation) to support setting the invocant and arguments of the generator function in a conveninet way. The change is that all resume functions are on the global coro object and should be called immediately to get a callback to pass to an asynchronous API.
+
 Usage
 =====
 
