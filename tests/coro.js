@@ -5,7 +5,7 @@ var litmus = require('litmus'),
     p      = require('p-promise');
 
 module.exports = new litmus.Test(module, function () {
-    this.plan(16);
+    this.plan(18);
 
     var test = this;
 
@@ -112,6 +112,17 @@ module.exports = new litmus.Test(module, function () {
                 done.resolve();
             });
 
+        });
+
+        test.async('invocant and args', function (done) {
+            var invocant = {},
+                arg1 = {}, arg2 = {};
+
+            coro.run.call(invocant, function * (passedArg1, passedArg2) {
+                test.ok(invocant === this, 'invocant to run is invocant to generator function');
+                test.ok(arg1 === passedArg1 && arg2 === passedArg2, 'args are those passed to run');
+                done.resolve();
+            }, [ arg1, arg2 ]);
         });
 
     });
