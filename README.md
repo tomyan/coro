@@ -27,7 +27,7 @@ Run a coroutine as follows:
         
         // Coroutine goodness here
         
-    });
+    }).done();
 
 coro.run(generator, args, callback) takes the following arguments:
 
@@ -56,7 +56,7 @@ Coro makes it really easy to use a promise based API and access the resolved val
             // e is the value the promise was rejected wtih 
         }
         
-    });
+    }).done();
 
 Callback based APIs
 -------------------
@@ -80,7 +80,7 @@ coro.resume() returns a function that will resume the current coroutine where it
             console.log('uh oh: ' + e.message);
         }
 
-    });
+    }).done();
 
 ### coro.resumeFirst()
 
@@ -95,7 +95,7 @@ If you're only interested in the first parameter (e.g. the output to STDOUT for 
         
         // still throws on error
         
-    });
+    }).done();
 
 ### coro.resumeNth(n)
 
@@ -111,7 +111,7 @@ The more general case of the above is coro.resumeNth(n). This allows you to pick
         
         // still throws on error
         
-    });
+    }).done();
 
 ### coro.resumeNoThrow()
 
@@ -128,7 +128,7 @@ The careful observer will notice that there's a problem with the above methods. 
         
         // still throws on error
         
-    });
+    }).done();
 
 This is also useful for callback APIs that don't follow Node's conventions for indicating an error in the first parameter.
 
@@ -155,7 +155,7 @@ Some styles of callback API have a separate callback just for signalling errors 
             // e is the parameter to the errback if there is an error
         }
         
-    });
+    }).done();
 
 Using this method for handling promises isn't recommended - use the built in promise support described above.
 
@@ -199,7 +199,7 @@ If a callback is not passed, a Promises A+ compatible promise is returned from t
         // deal with output
     }, function (err) {
         // deal with errors
-    });
+    }).done();
 
 
 coro.boundRun() method
@@ -217,7 +217,7 @@ If you'd like to maintain the value of `this` inside a coroutine without having 
         
         this.run(function * () {
             // this is the instance of my thing
-        });
+        }).done();
         
     };
 
